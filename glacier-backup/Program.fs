@@ -4,7 +4,7 @@ open System.Security.Cryptography
 
 type fileAtrrs = { name : string; length : int64; hash : string; relativePath: string; }
 
-let fullHashFileLimit = 10 * 1024 * 1024
+let fullHashFileLimit =   512 * 1024
 
 [<EntryPoint>]
 let main argv = 
@@ -13,7 +13,7 @@ let main argv =
     //let directoryPath = @"C:\personal\photos\photos\2013-12-04"
     let directoryPath = @"C:\personal\photos\photos\"
 
-    let resultsPath = @"c:\temp\file-results.txt"
+    let resultsPath = @"c:\temp\file-results_0.5MB.txt"
 
     let getFilesFromPath path =
         Directory.EnumerateFiles (path, "*.*", SearchOption.AllDirectories)
@@ -28,19 +28,19 @@ let main argv =
             |> (fun stream -> new BufferedStream(stream))
             :> Stream
 
-        let getFirst10MBStream filePath =
+        let getFirstNBytestream N filePath=
             let fs = getFileStream filePath
-            let buf, read, offset  = Array.zeroCreate fullHashFileLimit, ref 0, ref 0
-            let leftToRead = ref buf.Length
+            let emptyBuf = Array.zeroCreate N
 
-            let doRead() = 
-                read := fs.Read(buf, offset.Value, leftToRead.Value)
-                read
-
-            while leftToRead.Value > 0 && doRead().Value > 0 do
-                  leftToRead := leftToRead.Value - read.Value
-                  offset := offset.Value + read.Value
+            let rec readStream buf (fs:Stream) start take =
+                if take <= 0 then buf
+                else
+                    let readBytes = fs.Read (buf, start, take)
+                    if readBytes = 0 then buf
+                    else readStream buf fs (start + readBytes) (take - readBytes)
         
+            let buf = readStream emptyBuf fs 0 fullHashFileLimit
+            
             new MemoryStream(buf)
             :> Stream
 
@@ -51,12 +51,11 @@ let main argv =
             |> (fun x -> x.Replace("-", ""))
 
         let getAppropriateStreamFn fileSize =
-            match fileSize with
-                | size when size > int64(fullHashFileLimit) -> getFirst10MBStream
-                | _ -> getFileStream
-
+            if fileSize > int64(fullHashFileLimit) then getFirstNBytestream fullHashFileLimit
+            else getFileStream
+             
         fileInfo.FullName |>
-        (fileInfo.Length |> getAppropriateStreamFn)
+        (getAppropriateStreamFn fileInfo.Length)
         |> getMd5
 
     let getFileAttrs (fileInfo : FileInfo) =
@@ -65,7 +64,8 @@ let main argv =
     let clearResults = 
         File.WriteAllText (resultsPath, "")
     
-    let writeResult msg = 
+    let writeResult fileInfo = 
+        let msg = fileInfo.name + " " + fileInfo.length.ToString() + " " +  fileInfo.hash 
         File.AppendAllText (resultsPath, msg)
         File.AppendAllText (resultsPath, "\n")
         printfn "%s" msg
@@ -74,12 +74,16 @@ let main argv =
         printfn "%s %i %s %s" fileInfo.name fileInfo.length fileInfo.hash fileInfo.relativePath
         
     clearResults
+    let stopWatch = System.Diagnostics.Stopwatch.StartNew()
     directoryPath
         |> getFilesFromPath
         |> Seq.map getFileInfo   
         |> Seq.map getFileAttrs               
-        |> Seq.iter report
+        |> Seq.iter writeResult
+    stopWatch.Stop()
+    
+    printfn "Done %i" (int stopWatch.Elapsed.TotalSeconds)
 
-    printfn "Done"
+
     let x = Console.ReadLine()
     0 // return an integer exit code
