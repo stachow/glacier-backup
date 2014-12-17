@@ -4,7 +4,7 @@ open System.Security.Cryptography
 
 type fileAtrrs = { name : string; length : int64; hash : string; relativePath: string; }
 
-let fullHashFileLimit =   512 * 1024
+let fullHashFileLimit =   1 * 1024 * 1024
 
 [<EntryPoint>]
 let main argv = 
@@ -13,7 +13,7 @@ let main argv =
     //let directoryPath = @"C:\personal\photos\photos\2013-12-04"
     let directoryPath = @"C:\personal\photos\photos\"
 
-    let resultsPath = @"c:\temp\file-results_0.5MB.txt"
+    let resultsPath = @"c:\temp\file-results.txt"
 
     let getFilesFromPath path =
         Directory.EnumerateFiles (path, "*.*", SearchOption.AllDirectories)
@@ -21,7 +21,7 @@ let main argv =
     let getFileInfo filePath = 
         new FileInfo(filePath)
 
-    let getHash (fileInfo : FileInfo) = 
+    let getHash (fileInfo : FileInfo) hashLength = 
 
         let getFileStream filePath =
             File.OpenRead filePath 
@@ -49,6 +49,7 @@ let main argv =
             md5.ComputeHash (stream : Stream) 
             |> BitConverter.ToString
             |> (fun x -> x.Replace("-", ""))
+            |> (fun x -> x.Substring(0, hashLength))
 
         let getAppropriateStreamFn fileSize =
             if fileSize > int64(fullHashFileLimit) then getFirstNBytestream fullHashFileLimit
@@ -56,16 +57,16 @@ let main argv =
              
         fileInfo.FullName |>
         (getAppropriateStreamFn fileInfo.Length)
-        |> getMd5
+        |> getMd5 
 
     let getFileAttrs (fileInfo : FileInfo) =
-        { name = fileInfo.Name; length = fileInfo.Length; hash = getHash fileInfo; relativePath = fileInfo.FullName }
+        { name = fileInfo.Name; length = fileInfo.Length; hash = getHash fileInfo 8; relativePath = fileInfo.FullName }
         
     let clearResults = 
         File.WriteAllText (resultsPath, "")
     
     let writeResult fileInfo = 
-        let msg = fileInfo.name + " " + fileInfo.length.ToString() + " " +  fileInfo.hash 
+        let msg = fileInfo.hash.Substring(0, 8) + " " + fileInfo.length.ToString()
         File.AppendAllText (resultsPath, msg)
         File.AppendAllText (resultsPath, "\n")
         printfn "%s" msg
