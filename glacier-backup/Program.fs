@@ -8,7 +8,7 @@ let fullHashFileLimit =   1 * 1024 * 1024
 
 [<EntryPoint>]
 let main argv = 
-    
+    0
     //let directoryPath = @"C:\personal\photos\photos\disc-06"
     //let directoryPath = @"C:\personal\photos\photos\2013-12-04"
     let directoryPath = @"C:\personal\photos\photos\"

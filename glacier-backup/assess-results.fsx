@@ -12,12 +12,12 @@ let getSplits len (res : string) =
                     |> Seq.toList
                     |> List.rev
 
-    let (hash, remain) = revSplits |> List.head |> (fun x -> x.Substring(0, len)), List.tail revSplits
+    let (hash, remain) =  List.head revSplits, List.tail revSplits
     let (size, remain) = List.head remain |> int64, List.tail remain
     let backToOriginalOrderArr = List.rev remain |> List.toArray 
     let name = String.Join(" ", backToOriginalOrderArr)
 
-    { name = name; size = size; hash = hash }
+    { name = name; size = size; hash = hash.Substring(0, len) }
 
 resLines
 |> Seq.map (getSplits 8)
