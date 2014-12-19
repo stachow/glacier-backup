@@ -3,7 +3,7 @@
 open Amazon
 open Amazon.S3.Model
 
-let secrets = File.ReadAllLines (__SOURCE_DIRECTORY__ + "\config.secret.txt")
+let secrets = File.ReadAllLines (__SOURCE_DIRECTORY__ + @"\config.secret.txt")
 let awsAccessKey = secrets.[0]
 let awsSecretKey = secrets.[1]        
 
@@ -47,4 +47,8 @@ ensureBucketExists()
 listBuckets()
 storeFile manifestObjectName (getFileStream @"C:\temp\file-results.zip")
 
+
+
 printfn "%s %s" awsAccessKey awsSecretKey
+
+

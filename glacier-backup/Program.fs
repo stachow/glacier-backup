@@ -6,9 +6,8 @@ type fileAtrrs = { name : string; length : int64; hash : string; relativePath: s
 
 let fullHashFileLimit =   1 * 1024 * 1024
 
-[<EntryPoint>]
-let main argv = 
-    0
+let generateHashFile() = 
+
     //let directoryPath = @"C:\personal\photos\photos\disc-06"
     //let directoryPath = @"C:\personal\photos\photos\2013-12-04"
     let directoryPath = @"C:\personal\photos\photos\"
@@ -84,7 +83,30 @@ let main argv =
     stopWatch.Stop()
     
     printfn "Done %i" (int stopWatch.Elapsed.TotalSeconds)
+    ()
 
+
+open zip_test
+let zipTest() =
+    let directoryPath = @"C:\personal\photos\photos\2013-12-04"
+    let filePaths =
+        Directory.EnumerateFiles (directoryPath, "*.*", SearchOption.AllDirectories)
+
+    zipFiles filePaths
+    printfn "Done zipFiles"
+    ()
+
+[<EntryPoint>]
+let main argv = 
+    printfn "h to generate hash files"
+    printfn "z to test zipping"
+    
+    let choice = Console.ReadLine()
+    
+    match choice with
+    | "h" -> generateHashFile()
+    | "z" -> zipTest()
+    | _ -> failwith "Unsupported option"
 
     let x = Console.ReadLine()
     0 // return an integer exit code
